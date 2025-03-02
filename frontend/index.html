@@ -3,114 +3,121 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - JWT Authentication</title>
+  <title>JobLens</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
-  <div class="w-full max-w-md bg-white rounded-lg shadow-md p-6">
-    <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
-
-    <form id="loginForm" class="space-y-4">
-      <input type="text" id="username" placeholder="Username" class="w-full px-4 py-2 border rounded-md focus:outline-none">
-      <input type="password" id="password" placeholder="Password" class="w-full px-4 py-2 border rounded-md focus:outline-none">
-      <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">Login</button>
-    </form>
-
-    <!-- Microsoft Login Button -->
-    <div class="mt-4">
-      <button id="msLoginButton" class="w-full bg-gray-800 text-white py-2 rounded-md hover:bg-gray-900 flex items-center justify-center">
-        <svg class="w-5 h-5 mr-2" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
-          <path fill="#f3f3f3" d="M0 0h23v23H0z"/>
-          <path fill="#f35325" d="M1 1h10v10H1z"/>
-          <path fill="#81bc06" d="M12 1h10v10H12z"/>
-          <path fill="#05a6f0" d="M1 12h10v10H1z"/>
-          <path fill="#ffba08" d="M12 12h10v10H12z"/>
-        </svg>
-        Login with Microsoft
-      </button>
-    </div>
-
-    <!-- Message display -->
-    <div id="message" class="mt-4 text-center"></div>
-
-    <!-- Register Link Section -->
-    <div class="mt-4 text-center">
-      <p>Not have an account? <a href="register.html" class="text-blue-500 hover:underline">Register</a></p>
-    </div>
+  <div class="text-center" id="content">
+    <h1 class="text-3xl font-bold mb-4">JobLens</h1>
+    <p class="mb-4">Checking authentication...</p>
   </div>
 
   <script>
-  const API_URL = "http://localhost:5000/api/users/login";
-  const MS_AUTH_URL = "http://localhost:5000/auth/login/microsoft";
-
-  // Username/Password Login
-  document.getElementById("loginForm").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
-
-    try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-      });
-
-      const data = await response.json();
-      const messageDiv = document.getElementById("message");
-
-      if (response.ok) {
-        localStorage.setItem("token", data.token);
-        messageDiv.textContent = "Login successful!";
-        messageDiv.className = "text-green-500";
-        window.location.href = "welcome.html";
-      } else {
-        messageDiv.textContent = data.message;
-        messageDiv.className = "text-red-500";
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      document.getElementById("message").textContent = "An error occurred.";
-      document.getElementById("message").className = "text-red-500";
-    }
-  });
-
-  // Microsoft Login
-  document.getElementById("msLoginButton").addEventListener("click", () => {
-    window.location.href = MS_AUTH_URL; // Redirect to backend Microsoft login endpoint
-  });
-
-  // Handle Microsoft login callback (after redirect)
-  window.addEventListener("load", async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("auth") === "success") {
+    // Check authentication state
+    async function checkAuth() {
       try {
-        const response = await fetch("http://localhost:5000/auth/user", {
-          method: "GET",
-          credentials: "include" // Include cookies for session
+        const response = await fetch('http://localhost:5000/auth/user', {
+          method: 'GET',
+          credentials: 'include'
         });
         const data = await response.json();
+        const contentDiv = document.getElementById('content');
         if (response.ok) {
-          // Store some identifier or token if needed
-          localStorage.setItem("msUser", JSON.stringify(data));
-          document.getElementById("message").textContent = "Microsoft login successful!";
-          document.getElementById("message").className = "text-green-500";
-          setTimeout(() => {
-            window.location.href = "welcome.html";
-          }, 1000);
+          contentDiv.innerHTML = `
+            <h1 class="text-3xl font-bold mb-4">JobLens</h1>
+            <p class="mb-4">You are logged in as ${data.email}.</p>
+            <div class="mt-6">
+              <p class="text-md mb-2">Enter a link of a job posting you applied to</p>
+              <div class="flex items-center space-x-2">
+                <input type="text" id="linkInput" placeholder="Paste your link here" class="w-full px-4 py-2 border rounded-md focus:outline-none">
+                <button id="enterButton" class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">Enter</button>
+              </div>
+              <p id="linkMessage" class="mt-2 text-sm text-red-500" style="display: none;"></p>
+            </div>
+            <button id="logoutButton" class="mt-4 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600">Logout</button>
+          `;
+          // Add event listeners after DOM update
+          document.getElementById('enterButton').addEventListener('click', handleEnterClick);
+          document.getElementById('logoutButton').addEventListener('click', handleLogout);
         } else {
-          throw new Error(data.error);
+          window.location.href = 'login.html';
         }
       } catch (error) {
-        console.error("Error fetching Microsoft user:", error);
-        document.getElementById("message").textContent = "Failed to complete Microsoft login.";
-        document.getElementById("message").className = "text-red-500";
+        console.error('Error checking auth:', error);
+        window.location.href = 'login.html';
       }
-    } else if (urlParams.get("auth") === "error") {
-      document.getElementById("message").textContent = "Microsoft login failed.";
-      document.getElementById("message").className = "text-red-500";
     }
-  });
+
+    // Handle Enter button click
+    async function handleEnterClick() {
+      const linkInput = document.getElementById('linkInput');
+      const link = linkInput.value.trim();
+      const linkMessage = document.getElementById('linkMessage');
+
+      if (link) {
+        if (isValidUrl(link)) {
+          linkMessage.style.display = 'none';
+          try {
+            const response = await fetch('http://localhost:5000/auth/api/process-link', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ link })
+            });
+            const data = await response.json();
+            if (response.ok) {
+              linkMessage.textContent = 'Email sent successfully with job title!';
+              linkMessage.className = 'mt-2 text-sm text-green-500';
+              linkMessage.style.display = 'block';
+              linkInput.value = '';
+            } else {
+              throw new Error(data.error || 'Failed to process link');
+            }
+          } catch (error) {
+            console.error('Error processing link:', error);
+            linkMessage.textContent = 'Error processing link or sending email. Please try again.';
+            linkMessage.className = 'mt-2 text-sm text-red-500';
+            linkMessage.style.display = 'block';
+          }
+        } else {
+          linkMessage.textContent = 'Please enter a valid URL (e.g., https://example.com)';
+          linkMessage.style.display = 'block';
+        }
+      } else {
+        linkMessage.textContent = 'Please enter a link';
+        linkMessage.style.display = 'block';
+      }
+    }
+
+    // Handle Logout
+    function handleLogout() {
+      fetch('http://localhost:5000/auth/logout', {
+        method: 'GET',
+        credentials: 'include'
+      }).then(response => response.json())
+        .then(data => {
+          if (data.redirect) {
+            window.location.href = data.redirect;
+          }
+        })
+        .catch(error => {
+          console.error('Logout error:', error);
+          window.location.href = 'login.html';
+        });
+    }
+
+    // Basic URL validation function
+    function isValidUrl(string) {
+      try {
+        new URL(string);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    // Run on load
+    window.addEventListener('load', checkAuth);
   </script>
 </body>
 </html>
