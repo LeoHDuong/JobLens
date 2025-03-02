@@ -1,13 +1,80 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - JWT Authentication</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="w-full max-w-md bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
+
+    <form id="loginForm" class="space-y-4">
+      <input type="text" id="username" placeholder="Username" class="w-full px-4 py-2 border rounded-md focus:outline-none">
+      <input type="password" id="password" placeholder="Password" class="w-full px-4 py-2 border rounded-md focus:outline-none">
+      <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">Login</button>
+    </form>
+
+    <!-- Message display -->
+    <div id="message" class="mt-4 text-center"></div>
+
+    <!-- Register Link Section -->
+    <div class="mt-4 text-center">
+      <p>Not have an account? <a href="register.html" class="text-blue-500 hover:underline">Register</a></p>
+    </div>
+  </div>
+
+  <script>
+  const API_URL = "http://localhost:5000/api/users/login";
+
+  document.getElementById("loginForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await response.json();
+      const messageDiv = document.getElementById("message");
+
+      if (response.ok) {
+        localStorage.setItem("token", data.token);
+        messageDiv.textContent = "Login successful!";
+        messageDiv.className = "text-green-500";
+        // Redirect to a new page where the image will be displayed
+        window.location.href = "welcome.html"; // Redirect to the 'welcome' page
+      } else {
+        messageDiv.textContent = data.message;
+        messageDiv.className = "text-red-500";
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  });
+
+
+// async function callProtectedAPI() {
+//   const token = localStorage.getItem("token");
+//   if (!token) return;
+
+//   try {
+//     const response = await fetch("http://localhost:5000/api/protected", {
+//       method: "GET",
+//       headers: { "Authorization": `Bearer ${token}` }
+//     });
+
+//     const data = await response.json();
+//     console.log("Protected API Response:", data);
+//   } catch (error) {
+//     console.error("Protected API Error:", error);
+//   }
+// }
+  </script>
+</body>
 </html>
